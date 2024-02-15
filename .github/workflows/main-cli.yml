@@ -1,0 +1,28 @@
+name: 'Terraform Deployment Workflow'
+ 
+on:
+  pull_request:
+    branches: [ "main" ]
+ 
+jobs:
+  terraform_workflow:
+    name: 'Validate Terraform Configuration'
+    runs-on: ubuntu-latest
+ 
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+ 
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+ 
+    - name: Initialize Terraform
+      run: |
+        terraform init
+        terraform init -upgrade
+ 
+    - name: Format Terraform Configuration
+      run: terraform fmt
+ 
+    - name: Validate Terraform Configuration
+      run: terraform validate
