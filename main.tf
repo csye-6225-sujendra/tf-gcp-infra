@@ -40,4 +40,3 @@ resource "google_compute_route" "webapp_route" {
   dest_range       = var.web_app_route_cidr
   priority         = 1000
   next_hop_gateway = var.next_hop_gateway
-}
