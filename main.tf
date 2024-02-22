@@ -7,94 +7,91 @@ terraform {
   }
 }
 
-
 provider "google" {
-  credentials = file(var.credentials_file)
-  project = var.project_id
-  region  = var.region
-  zone    = var.region
+  project = var.project_identifier
+  region  = var.geographical_region
+  zone    = var.geographical_region
 }
 resource "google_compute_network" "vpc_network" {
   count                           = length(var.vpcs)
-  name                            = var.vpcs[count.index].vpc_name
-  auto_create_subnetworks         = var.auto_create_subnets
+  name                            = var.vpcs[count.index].vpc
+  auto_create_subnetworks         = var.auto_subnet_creation
   routing_mode                    = var.routing_mode
-  delete_default_routes_on_create = var.delete_default_routes
+  delete_default_routes_on_create = var.remove_default_routes
 }
 
 resource "google_compute_subnetwork" "webapp" {
   count                    = length(var.vpcs)
-  name                     = var.vpcs[count.index].websubnet_name
-  ip_cidr_range            = var.vpcs[count.index].webapp_subnet_cidr
-  region                   = var.region
+  name                     = var.vpcs[count.index].websubnet
+  ip_cidr_range            = var.vpcs[count.index].webapp_cidr
+  region                   = var.geographical_region
   network                  = google_compute_network.vpc_network[count.index].self_link
   private_ip_google_access = var.vpcs[count.index].privateipgoogleaccess
 }
 resource "google_compute_subnetwork" "db" {
   count                    = length(var.vpcs)
-  name                     = var.vpcs[count.index].dbsubnet_name
-  ip_cidr_range            = var.vpcs[count.index].db_subnet_cidr
-  region                   = var.region
+  name                     = var.vpcs[count.index].dbsubnet
+  ip_cidr_range            = var.vpcs[count.index].db_cidr
+  region                   = var.geographical_region
   network                  = google_compute_network.vpc_network[count.index].self_link
   private_ip_google_access = var.vpcs[count.index].privateipgoogleaccess
 }
 
 resource "google_compute_route" "webapp_route" {
   count            = length(var.vpcs)
-  name             = var.vpcs[count.index].websubnetroutename
+  name             = var.vpcs[count.index].webapproute
   network          = google_compute_network.vpc_network[count.index].self_link
-  dest_range       = var.web_app_route_cidr
+  dest_range       = var.webapp_subnetroute_cidr
   priority         = 1000
   next_hop_gateway = var.next_hop_gateway
 }
 
-resource "google_compute_firewall" "private_vpc_webapp_firewall" {
-  name = var.webapp_firewall_name
-  network = google_compute_network.vpc_network.self_link
- 
+
+resource "google_compute_firewall" "allow_application" {
+  count   = length(var.vpcs)
+  name    = "allow-application${count.index}"
+  network = google_compute_network.vpc_network[count.index].name
+
   allow {
-    protocol = var.webapp_firewall_protocol
-    ports = var.webapp_firewall_protocol_allow_ports
+    protocol = "tcp"
+    ports    = [var.app_port]
   }
- 
-  source_tags = var.webapp_firewall_source_tags
-  target_tags = var.webapp_firewall_target_tags
+
+  source_ranges = ["0.0.0.0/0"]
 }
- 
-resource "google_compute_firewall" "private_vpc_ssh_firewall" {
-  name = var.webapp_subnet_ssh
-  network = google_compute_network.vpc_network.self_link
- 
+
+resource "google_compute_firewall" "deny_ssh" {
+  count   = length(var.vpcs)
+  name    = "deny-ssh-${count.index}"
+  network = google_compute_network.vpc_network[count.index].name
+
   deny {
-    protocol = var.webapp_firewall_protocol
-    ports = var.webapp_firewall__protocol_deny_ports
+    protocol = "tcp"
+    ports    = ["22"]
   }
- 
-  source_tags = var.webapp_firewall_source_tags
-  target_tags = var.webapp_firewall_target_tags
+
+  source_ranges = ["0.0.0.0/0"]
 }
- 
-resource "google_compute_instance" "webapp_instance" {
-  name = var.compute_instance_name
-  machine_type = var.machine_type
-  zone = var.zone
- 
-  tags = var.compute_instance_tags
- 
+
+resource "google_compute_instance" "vm_instance" {
+  name         = var.vm_name
+  zone         = var.vm_zone
+  machine_type = var.vm_machine_type
+
   boot_disk {
     initialize_params {
-      image = var.instance_image
-      size = var.instance_size
-      type = var.webapp_bootdisk_type
+      image = var.vm_image
+      type  = var.vm_disk_type
+      size  = var.vm_disk_size_gb
     }
   }
- 
+
   network_interface {
-    network = google_compute_network.vpc_network.name
-    subnetwork = google_compute_subnetwork.webapp_subnet.name
- 
+    network    = google_compute_network.vpc_network[0].id
+    subnetwork = google_compute_subnetwork.webapp[0].id
+
     access_config {
-      network_tier = var.network_tier
+      // External IP
     }
   }
 }
