@@ -1,142 +1,87 @@
-variable "project_id" {
-  description = "id for the project"
+variable "project_identifier" {
+  description = "project id"
   type        = string
 }
 
-variable "region" {
-  description = "The GCP region to deploy resources"
+variable "geographical_region" {
+  description = "GCP region"
   type        = string
 }
 
-variable "zone" {
-  description = "The GCP zone to deploy resources"
-  type        = string
-}
-
-variable "credentials_file" {
-  description = "File have gcp credentials for seervice account"
+variable "availability_zone" {
+  description = "GCP zone"
   type        = string
 }
 
 variable "vpcs" {
-  description = "A list of objects representing VPC configurations"
+  description = "VPC configurations"
   type = list(object({
-    name = string
-    # description = "The name of the VPC"
-    vpc_name = string
-    # description = "The name of web subnet"
-    websubnet_name = string
-    # description = "The name of db subnet"
-    dbsubnet_name = string
-    # description = "CIDR for the webapp subnet"
-    webapp_subnet_cidr = string
-    # description = "CIDR for the db subnet"
-    db_subnet_cidr = string
-    # description = "CIDR for the webapp subnet route"
-    websubnetroutename = string
-    # description = "To set private ip google access of subnets to on or off"
+    name                  = string
+    vpc                   = string
+    websubnet             = string
+    dbsubnet              = string
+    webapp_cidr           = string
+    db_cidr               = string
+    webapproute           = string
     privateipgoogleaccess = bool
   }))
 }
-variable "web_app_route_cidr" {
+variable "webapp_subnetroute_cidr" {
   description = "CIDR for the webapp subnet route"
   type        = string
 }
 
-variable "auto_create_subnets" {
-  description = "To set value to true or false for automatically creating subnets"
+variable "auto_subnet_creation" {
+  description = "Auto create subnets"
   type        = bool
 }
 
-variable "delete_default_routes" {
-  description = "To set value to true or false to delete default routes"
+variable "remove_default_routes" {
+  description = "Remove default routes"
   type        = bool
 }
 
 variable "routing_mode" {
-  description = "To set routing mode"
+  description = "Routing mode"
   type        = string
 }
 
 variable "next_hop_gateway" {
-  description = "To set next hop gateway value"
+  description = "Next hop gateway"
   type        = string
 }
 
-variable "credentials_file" {
-  description = "Path to the Google Cloud Platform service account key file"
+variable "vm_name" {
+  description = "The name of the VM instance"
   type        = string
 }
 
+variable "vm_zone" {
+  description = "The zone for the VM instance"
+  type        = string
+}
 
- 
-variable "webapp_firewall_name" {
-  description = "Name of the firewall for the web application"
+variable "vm_machine_type" {
+  description = "The machine type for the VM instance"
   type        = string
 }
- 
-variable "webapp_firewall_protocol" {
-  description = "Protocol for the web application firewall rule (e.g., tcp, udp)"
+
+variable "vm_image" {
+  description = "The custom image for the VM boot disk"
   type        = string
 }
- 
-variable "webapp_firewall_protocol_allow_ports" {
-  description = "List of ports to allow for the web application firewall rule"
-  type        = list(string)
-}
- 
-variable "webapp_firewall_source_tags" {
-  description = "Source tags for the web application firewall rule"
-  type        = list(string)
-}
- 
-variable "webapp_firewall_target_tags" {
-  description = "Target tags for the web application firewall rule"
-  type        = list(string)
-}
- 
-variable "webapp_subnet_ssh" {
-  description = "Name of the firewall rule for SSH access to the web application subnet"
+
+variable "vm_disk_type" {
+  description = "The disk type for the VM boot disk"
   type        = string
 }
- 
-variable "webapp_firewall__protocol_deny_ports" {
-  description = "List of ports to deny for the web application SSH firewall rule"
-  type        = list(string)
-}
- 
-variable "compute_instance_name" {
-  description = "Name of the compute instance for the web application"
-  type        = string
-}
- 
-variable "machine_type" {
-  description = "Machine type for the compute instance"
-  type        = string
-}
- 
- 
-variable "instance_image" {
-  description = "URL of the image for the compute instance"
-  type        = string
-}
- 
-variable "instance_size" {
-  description = "Size of the boot disk for the compute instance (in GB)"
+
+variable "vm_disk_size_gb" {
+  description = "The size of the VM boot disk in GB"
   type        = number
 }
- 
-variable "webapp_bootdisk_type" {
-  description = "Type of the boot disk for the compute instance"
-  type        = string
-}
- 
-variable "compute_instance_tags" {
-  description = "Tags for the compute instance"
-  type        = list(string)
-}
- 
-variable "network_tier" {
-  description = "Network tier for the compute instance"
+
+variable "app_port" {
+  description = "The application port"
   type        = string
 }
