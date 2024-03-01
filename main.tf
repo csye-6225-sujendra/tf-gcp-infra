@@ -91,7 +91,92 @@ resource "google_compute_instance" "vm_instance" {
     subnetwork = google_compute_subnetwork.webapp[0].id
 
     access_config {
-      // External IP
+      // Ephemeral public IP
     }
   }
+
+  metadata_startup_script = templatefile("startup.sh", {
+    db_host         = google_sql_database_instance.instance.private_ip_address,
+    db_user         = google_sql_user.user.name,
+    db_password     = random_password.cloudsql_password.result,
+    db_name         = google_sql_database.database.name,
+    db_port         = var.db_port,
+    db_dialect      = var.db_dialect,
+    db_pool_max     = var.db_pool_max,
+    db_pool_min     = var.db_pool_min,
+    db_pool_acquire = var.db_pool_acquire,
+    db_pool_idle    = var.db_pool_idle
+  })
+
+
+
+  depends_on = [
+    google_sql_database_instance.instance,
+    google_compute_subnetwork.webapp[0],
+    google_compute_global_address.private_ip_allocation
+  ]
+
+}
+
+
+resource "google_compute_global_address" "private_ip_allocation" {
+  name          = var.address_name
+  address_type  = var.address_type
+  purpose       = var.address_purpose
+  prefix_length = var.address_prefix_length
+  network       = google_compute_network.vpc_network[0].self_link
+}
+
+resource "google_service_networking_connection" "private_services_connection" {
+  network                 = google_compute_network.vpc_network[0].self_link
+  service                 = var.service_name
+  reserved_peering_ranges = [google_compute_global_address.private_ip_allocation.name]
+}
+
+resource "google_sql_database_instance" "instance" {
+  name             = var.cloud_sql_instance_name
+  region           = var.region
+  database_version = var.cloud_sql_version
+  depends_on       = [google_service_networking_connection.private_services_connection]
+
+  settings {
+    tier = var.cloud_sql_instance_tier
+
+    ip_configuration {
+      ipv4_enabled    = var.cloud_sql_instance_ipv4_enabled
+      private_network = google_compute_network.vpc_network[0].self_link
+    }
+
+    availability_type = var.cloud_sql_instance_availability_type
+    disk_type         = var.cloud_sql_instance_disk_type
+    disk_size         = var.cloud_sql_instance_disk_size
+
+    backup_configuration {
+      enabled            = true
+      binary_log_enabled = true
+    }
+
+    // Other settings...
+  }
+
+  deletion_protection = var.cloud_sql_instance_deletion_protection
+}
+
+resource "google_sql_database" "database" {
+  name            = var.cloudsql_database_name
+  instance        = google_sql_database_instance.instance.name
+  deletion_policy = var.google_sql_deletion_policy
+}
+
+resource "google_sql_user" "user" {
+  name            = var.cloudsql_database_user_name
+  instance        = google_sql_database_instance.instance.name
+  password        = random_password.cloudsql_password.result
+  deletion_policy = var.google_sql_deletion_policy
+}
+
+resource "random_password" "cloudsql_password" {
+  length           = var.cloudsql_password_length
+  special          = var.cloudsql_password_special
+  override_special = var.cloudsql_password_override_special
 }

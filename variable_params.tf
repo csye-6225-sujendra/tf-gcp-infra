@@ -85,3 +85,138 @@ variable "app_port" {
   description = "The application port"
   type        = string
 }
+
+variable "cloudsql_database_name" {
+  description = "Name of the Cloud SQL database"
+  type        = string
+}
+
+variable "cloudsql_database_user_name" {
+  description = "Name of the Cloud SQL database user"
+  type        = string
+}
+
+variable "cloudsql_password_length" {
+  description = "Length of the randomly generated password for the Cloud SQL user"
+  type        = number
+}
+
+variable "cloudsql_password_special" {
+  description = "Whether to include special characters in the Cloud SQL user password"
+  type        = bool
+}
+
+variable "cloudsql_password_override_special" {
+  description = "Override default special characters for the Cloud SQL user password"
+  type        = string
+}
+
+variable "cloud_sql_instance_name" {
+  description = "Name of the Cloud SQL instance"
+  type        = string
+}
+
+variable "region" {
+  description = "Region for the Cloud SQL instance"
+  type        = string
+}
+
+variable "google_sql_deletion_policy" {
+  description = "Deletion policy for Google Cloud SQL resources"
+  type        = string
+}
+
+variable "cloud_sql_instance_tier" {
+  description = "Tier for the Cloud SQL instance"
+  type        = string
+}
+
+variable "cloud_sql_instance_ipv4_enabled" {
+  description = "Whether IPv4 is enabled for the Cloud SQL instance"
+  type        = bool
+}
+
+variable "cloud_sql_instance_availability_type" {
+  description = "Availability type for the Cloud SQL instance"
+  type        = string
+}
+
+variable "cloud_sql_instance_disk_type" {
+  description = "Disk type for the Cloud SQL instance"
+  type        = string
+}
+
+variable "cloud_sql_instance_disk_size" {
+  description = "Size of the disk for the Cloud SQL instance (in GB)"
+  type        = number
+}
+
+variable "cloud_sql_instance_deletion_protection" {
+  description = "Whether deletion protection is enabled for the Cloud SQL instance"
+  type        = bool
+}
+
+variable "ssl_cert_common_name" {
+  description = "Common name for SSL certificate"
+  type        = string
+}
+
+variable "db_port" {
+  description = "The port used by the database"
+  type        = string
+}
+
+variable "db_dialect" {
+  description = "The dialect used by the database"
+  type        = string
+}
+
+variable "db_pool_max" {
+  description = "The maximum number of connections in the database pool"
+  type        = number
+}
+
+variable "db_pool_min" {
+  description = "The minimum number of connections in the database pool"
+  type        = number
+}
+
+variable "db_pool_acquire" {
+  description = "The maximum time to acquire a connection in milliseconds for the database pool"
+  type        = number
+}
+
+variable "db_pool_idle" {
+  description = "The maximum idle time for a connection in milliseconds in the database pool"
+  type        = number
+}
+
+variable "cloud_sql_version" {
+  description = "Cloud SQL version"
+  type        = string
+}
+
+variable "address_name" {
+  description = "Name of the global address"
+  type        = string
+}
+
+variable "address_type" {
+  description = "Type of the address"
+  type        = string
+}
+
+variable "address_purpose" {
+  description = "Purpose of the address"
+  type        = string
+}
+
+variable "address_prefix_length" {
+  description = "Prefix length of the address"
+  type        = number
+}
+
+variable "service_name" {
+  description = "service name"
+  type        = string
+}
