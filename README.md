@@ -47,3 +47,4 @@ Follow these steps to deploy the network infrastructure using Terraform:
 
     ```bash
     terraform apply
+    
