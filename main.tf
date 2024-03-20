@@ -58,6 +58,7 @@ resource "google_compute_firewall" "allow_application" {
   }
 
   source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["allow-http"]
 }
 
 resource "google_compute_firewall" "deny_ssh" {
@@ -71,6 +72,7 @@ resource "google_compute_firewall" "deny_ssh" {
   }
 
   source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["deny-ssh"]
 }
 
 resource "google_compute_instance" "vm_instance" {
@@ -95,6 +97,12 @@ resource "google_compute_instance" "vm_instance" {
     }
   }
 
+  service_account {
+    email  = google_service_account.vm_service_account.email
+    scopes = [var.service_account_url]
+  }
+
+  tags = ["allow-http", "allow-ssh"]
   metadata_startup_script = templatefile("startup.sh", {
     db_host         = google_sql_database_instance.instance.private_ip_address,
     db_user         = google_sql_user.user.name,
@@ -179,4 +187,35 @@ resource "random_password" "cloudsql_password" {
   length           = var.cloudsql_password_length
   special          = var.cloudsql_password_special
   override_special = var.cloudsql_password_override_special
+}
+
+resource "google_dns_record_set" "a_record" {
+  name         = var.dns_record_name
+  type         = var.dns_record_type
+  ttl          = var.dns_recordset_ttl
+  managed_zone = var.dns_recordset_managed_zone
+  rrdatas      = [google_compute_instance.vm_instance.network_interface.0.access_config.0.nat_ip]
+}
+
+resource "google_service_account" "vm_service_account" {
+  account_id   = var.google_service_account_name
+  display_name = var.google_service_account_display
+}
+
+resource "google_project_iam_binding" "logging_admin_binding" {
+  project = var.project_identifier
+  role    = var.gcp_iam_binding_role_logging
+
+  members = [
+    "serviceAccount:${google_service_account.vm_service_account.email}",
+  ]
+}
+
+resource "google_project_iam_binding" "monitoring_metric_writer_binding" {
+  project = var.project_identifier
+  role    = var.gcp_iam_binding_role_monitoring
+
+  members = [
+    "serviceAccount:${google_service_account.vm_service_account.email}",
+  ]
 }

@@ -220,3 +220,48 @@ variable "service_name" {
   description = "service name"
   type        = string
 }
+
+variable "service_account_url" {
+  description = "gcp auth url"
+  type        = string
+}
+
+variable "dns_record_name" {
+  description = "Name for the DNS record"
+  type        = string
+}
+
+variable "dns_record_type" {
+  description = "Type for the DNS record"
+  type        = string
+}
+
+variable "dns_recordset_ttl" {
+  description = "TTL for the DNS recordset"
+  type        = number
+}
+
+variable "dns_recordset_managed_zone" {
+  description = "Managed zone for the DNS recordset"
+  type        = string
+}
+
+variable "google_service_account_name" {
+  description = "Name for the Google service account"
+  type        = string
+}
+
+variable "google_service_account_display" {
+  description = "Display name for the Google service account"
+  type        = string
+}
+
+variable "gcp_iam_binding_role_logging" {
+  description = "Role for logging IAM binding"
+  type        = string
+}
+
+variable "gcp_iam_binding_role_monitoring" {
+  description = "Role for monitoring IAM binding"
+  type        = string
+}
