@@ -265,3 +265,28 @@ variable "gcp_iam_binding_role_monitoring" {
   description = "Role for monitoring IAM binding"
   type        = string
 }
+
+variable "google_pubsub_topic_name" {
+  description = "pub sub topic name"
+  type        = string
+}
+
+variable "google_pubsub_subscription_name" {
+  description = "pub sub subscription name"
+  type        = string
+}
+
+variable "google_function_service_account_name" {
+  description = "function service account name"
+  type        = string
+}
+
+variable "google_function_service_account_display" {
+  description = "function service account display name"
+  type        = string
+}
+
+variable "google_project_iam_binding_role_TokenCreator" {
+  description = "iam binding roles"
+  type        = string
+}
