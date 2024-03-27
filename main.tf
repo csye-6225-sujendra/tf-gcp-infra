@@ -219,3 +219,150 @@ resource "google_project_iam_binding" "monitoring_metric_writer_binding" {
     "serviceAccount:${google_service_account.vm_service_account.email}",
   ]
 }
+
+resource "google_project_iam_binding" "pubsub_publisher" {
+  project = var.project_identifier
+  role    = "roles/pubsub.publisher"
+
+  members = [
+    "serviceAccount:${google_service_account.vm_service_account.email}"
+  ]
+}
+
+resource "google_pubsub_topic" "verify_email" {
+  name                       = var.google_pubsub_topic_name
+  message_retention_duration = "604800s"
+  depends_on                 = [google_service_networking_connection.private_services_connection]
+}
+
+
+# Create Pub/Sub subscription
+resource "google_pubsub_subscription" "my_subscription" {
+  name                 = var.google_pubsub_subscription_name
+  topic                = google_pubsub_topic.verify_email.name
+  ack_deadline_seconds = 10
+  expiration_policy {
+    ttl = "604800s"
+  }
+}
+
+# Create a service account for Cloud Functions
+resource "google_service_account" "function_service_account" {
+  account_id   = var.google_function_service_account_name
+  display_name = var.google_function_service_account_display
+}
+
+# Create IAM roles and bindings for the service account
+resource "google_project_iam_binding" "function_service_account_roles" {
+  project = var.project_identifier
+  role    = var.google_project_iam_binding_role_TokenCreator
+
+  members = [
+    "serviceAccount:${google_service_account.function_service_account.email}"
+  ]
+}
+
+
+resource "google_storage_bucket" "function_code_bucket" {
+  name     = "function_email_track"
+  location = var.region
+}
+
+resource "google_storage_bucket_object" "function_code_objects" {
+  name   = "serverless"
+  bucket = google_storage_bucket.function_code_bucket.name
+  source = "function-source.zip"
+}
+
+resource "google_cloudfunctions2_function" "email_verification_function" {
+
+  name     = "send_track_email"
+  location = var.region
+
+  build_config {
+    runtime     = "nodejs18"
+    entry_point = "sendEmail" # Set the entry point
+
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_code_bucket.name
+        object = google_storage_bucket_object.function_code_objects.name
+      }
+    }
+
+    environment_variables = {
+      BUILD_CONFIG_TEST = "build_test"
+      # DB_HOST           = google_sql_database_instance.instance.private_ip_address,
+      # DB_USER           = google_sql_user.user.name,
+      # DB_PASSWORD       = random_password.cloudsql_password.result,
+      # DB_NAME           = google_sql_database.database.name,
+      # DB_PORT           = var.db_port,
+      # DB_DIALECT        = var.db_dialect,
+      # DB_POOL_MAX       = var.db_pool_max,
+      # DB_POOL_MIN       = var.db_pool_min,
+      # DB_POOL_ACQUIRE   = var.db_pool_acquire,
+      # DB_POOL_IDLE      = var.db_pool_idle
+    }
+  }
+
+  service_config {
+    max_instance_count = 3
+    min_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 60
+
+    environment_variables = {
+      PUBSUB_TOPIC        = google_pubsub_topic.verify_email.name
+      SERVICE_CONFIG_TEST = "config_test"
+      DB_HOST             = google_sql_database_instance.instance.private_ip_address,
+      DB_USER             = google_sql_user.user.name,
+      DB_PASSWORD         = random_password.cloudsql_password.result,
+      DB_NAME             = google_sql_database.database.name,
+      DB_PORT             = var.db_port,
+      DB_DIALECT          = var.db_dialect,
+      DB_POOL_MAX         = var.db_pool_max,
+      DB_POOL_MIN         = var.db_pool_min,
+      DB_POOL_ACQUIRE     = var.db_pool_acquire,
+      DB_POOL_IDLE        = var.db_pool_idle
+    }
+
+    ingress_settings               = "ALLOW_INTERNAL_ONLY"
+    all_traffic_on_latest_revision = true
+    service_account_email          = google_service_account.function_service_account.email
+    vpc_connector                  = google_vpc_access_connector.vpc_connector.id
+
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.verify_email.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+
+  depends_on = [google_pubsub_topic.verify_email, google_storage_bucket_object.function_code_objects]
+}
+
+
+resource "google_vpc_access_connector" "vpc_connector" {
+  name          = "my-vpc-connector"
+  region        = var.geographical_region
+  network       = google_compute_network.vpc_network[0].name
+  ip_cidr_range = "10.8.0.0/28"
+}
+
+
+resource "google_project_iam_binding" "pubsub_service_account_roles" {
+  project = var.project_identifier
+  role    = "roles/iam.serviceAccountTokenCreator"
+
+  members = [
+    "serviceAccount:service-${var.project_identifier}@gcp-sa-pubsub.iam.gserviceaccount.com"
+  ]
+}
+
+resource "google_project_iam_member" "function_cloudsql_client" {
+  project = var.project_identifier
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.function_service_account.email}"
+}

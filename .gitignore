@@ -35,3 +35,4 @@ terraform.rc
 
 .terraform.lock.hcl
 csye-6225-414320-0552b3ef5c67.json
+*.zip
