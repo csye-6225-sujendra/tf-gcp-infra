@@ -290,3 +290,248 @@ variable "google_project_iam_binding_role_TokenCreator" {
   description = "iam binding roles"
   type        = string
 }
+
+variable "google_project_iam_member_function_cloudsql_client_role" {
+  description = "iam binding roles for function sql client"
+  type        = string
+}
+
+variable "google_project_iam_binding_pubsub_service_account_role" {
+  description = "iam binding roles for pub sub service account"
+  type        = string
+}
+
+
+variable "google_vpc_access_connector_name" {
+  description = "google vpc access connector name"
+  type        = string
+}
+
+
+variable "google_vpc_access_connector_ip_cidr_range" {
+  description = "google vpc access connector ip cidr range"
+  type        = string
+}
+
+variable "google_storage_bucket_name" {
+  type        = string
+  description = "Name of the Google Cloud Storage bucket where function source code and related objects are stored."
+  default     = "function_email_track"
+}
+
+variable "google_storage_bucket_object_name" {
+  type        = string
+  description = "Name of the object within the Google Cloud Storage bucket."
+  default     = "serverless"
+}
+
+variable "google_storage_bucket_object_source" {
+  type        = string
+  description = "Path to the source code ZIP file for the function."
+  default     = "function-source.zip"
+}
+
+variable "google_cloudfunctions2_function_name" {
+  type        = string
+  description = "Name of the Google Cloud Function."
+  default     = "send_track_email"
+}
+
+variable "google_cloudfunctions2_function_build_config_runtime" {
+  type        = string
+  description = "Runtime environment for the function."
+  default     = "nodejs18"
+}
+
+variable "google_cloudfunctions2_function_build_config_entry_point" {
+  type        = string
+  description = "Entry point for the function code."
+  default     = "sendEmail"
+}
+
+variable "google_cloudfunctions2_function_service_config_max_instance_count" {
+  type        = number
+  description = "Maximum number of instances for the function."
+  default     = 3
+}
+
+variable "google_cloudfunctions2_function_service_config_min_instance_count" {
+  type        = number
+  description = "Minimum number of instances for the function."
+  default     = 1
+}
+
+variable "google_cloudfunctions2_function_service_config_timeout_seconds" {
+  type        = number
+  description = "Maximum execution time allowed for the function, in seconds."
+  default     = 60
+}
+
+variable "google_cloudfunctions2_function_service_config_available_memory" {
+  type        = string
+  description = "Amount of memory available to the function instance."
+  default     = "256M"
+}
+
+variable "google_cloudfunctions2_function_service_config_ingress_settings" {
+  type        = string
+  description = "Network ingress settings for the function."
+  default     = "ALLOW_INTERNAL_ONLY"
+}
+
+variable "google_cloudfunctions2_function_event_trigger_event_type" {
+  type        = string
+  description = "Type of event that triggers the function."
+  default     = "google.cloud.pubsub.topic.v1.messagePublished"
+}
+
+variable "google_cloudfunctions2_function_event_trigger_retry_policy" {
+  type        = string
+  description = "Retry policy for failed function invocations."
+  default     = "RETRY_POLICY_RETRY"
+}
+
+variable "Autoscaler_service_account_name" {
+  type        = string
+  description = "Autoscaler service account name"
+}
+
+variable "Autoscaler_service_account_display_name" {
+  type        = string
+  description = "Autoscaler service account display name"
+}
+
+variable "google_compute_region_instance_template_name_prefix" {
+  type    = string
+  default = "webapp-template-"
+}
+
+variable "google_compute_region_instance_template_description" {
+  type    = string
+  default = "Creating Regional Compute Instance Template"
+}
+
+variable "google_compute_region_instance_template_auto_delete" {
+  type    = bool
+  default = true
+}
+
+variable "google_compute_region_instance_template_boot" {
+  type    = bool
+  default = true
+}
+
+variable "google_compute_region_instance_template_can_ip_forward" {
+  type    = bool
+  default = false
+}
+
+variable "google_project_iam_binding_pubsub_publisher_role" {
+  type    = string
+  default = "roles/pubsub.publisher"
+}
+
+variable "google_pubsub_topic_verify_email_message_retention_duration" {
+  type    = string
+  default = "604800s"
+}
+
+variable "google_pubsub_subscription_ack_deadline_seconds" {
+  type    = number
+  default = 10
+}
+
+variable "google_compute_http_health_check_name" {
+  type    = string
+  default = "webapp-health-check"
+}
+
+variable "google_compute_http_health_request_path" {
+  type    = string
+  default = "/healthz"
+}
+
+variable "google_compute_http_health_port" {
+  type    = number
+  default = 8080
+}
+
+variable "google_compute_region_autoscaler_name" {
+  type    = string
+  default = "webapp-autoscaler"
+}
+
+variable "google_compute_region_autoscaler_max_replicas" {
+  type    = number
+  default = 6
+}
+
+variable "google_compute_region_autoscaler_min_replicas" {
+  type    = number
+  default = 3
+}
+
+variable "google_compute_region_autoscaler_cpu_utilization_target" {
+  type    = number
+  default = 0.05
+}
+
+variable "google_project_iam_binding_compute_instance_role" {
+  type    = string
+  default = "roles/compute.instanceAdmin.v1"
+}
+
+variable "google_compute_region_instance_group_manager_name" {
+  type    = string
+  default = "webapp-igm"
+}
+
+variable "google_compute_region_instance_group_manager_base_instance_name" {
+  type    = string
+  default = "webapp"
+}
+
+variable "google_compute_region_instance_group_manager_port" {
+  type    = number
+  default = 8080
+}
+
+variable "google_compute_global_forwarding_rule_name" {
+  type    = string
+  default = "https-forwarding-rule"
+}
+
+variable "google_compute_global_forwarding_rule_load_balancing_scheme" {
+  type    = string
+  default = "EXTERNAL"
+}
+
+variable "google_compute_global_forwarding_rule_port_range" {
+  type    = string
+  default = "443"
+}
+
+variable "google_dns_managed_zone_existing_zone_name" {
+  type    = string
+  default = "sujendragharat"
+}
+
+variable "google_compute_backend_service_name" {
+  type    = string
+  default = "webapp-backend"
+}
+
+variable "google_compute_backend_service_protocol" {
+  type    = string
+  default = "HTTP"
+}
+
+variable "google_compute_backend_service_load_balancing_scheme" {
+  type    = string
+  default = "EXTERNAL"
+}
+
+variable "google_compute_backend_service_timeout_sec" {
+  type    = number
+  default = 10
+}
