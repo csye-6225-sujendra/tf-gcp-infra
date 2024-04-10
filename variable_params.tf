@@ -535,3 +535,78 @@ variable "google_compute_backend_service_timeout_sec" {
   type    = number
   default = 10
 }
+
+variable "google_kms_key_ring_name" {
+  type    = string
+  default = "rings-of-kms-3"
+}
+
+variable "google_kms_crypto_key_name" {
+  type    = string
+  default = "vm-crypto-key"
+}
+
+variable "google_kms_crypto_key_rotation_period" {
+  type    = string
+  default = "2592000s" # Assuming this represents a rotation period in seconds
+}
+
+variable "google_kms_crypto_key_iam_binding_role" {
+  type    = string
+  default = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+}
+
+variable "google_kms_crypto_key_iam_binding_service_account" {
+  type    = string
+  default = "service-279360147711@compute-system.iam.gserviceaccount.com"
+}
+
+variable "google_kms_crypto_key_gcp_sa_cloud_sql_service" {
+  type    = string
+  default = "gcp_sa_cloud_sql"
+}
+
+variable "google_kms_crypto_key_iam_binding_crypto_key_role" {
+  type    = string
+  default = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+}
+
+variable "google_kms_crypto_key_storage_crypto_key_name" {
+  type    = string
+  default = "storage-crypto-key"
+}
+
+variable "google_kms_crypto_key_storage_crypto_key_rotation_period" {
+  type    = string
+  default = "2592000s" # Assuming this represents a rotation period in seconds
+}
+
+variable "google_compute_firewall_name" {
+  type    = string
+  default = "allow-lb-firewall"
+}
+
+variable "google_compute_firewall_default" {
+  type    = string
+  default = "l7-xlb-fw-allow-hc"
+}
+
+variable "google_compute_url_map_default_name" {
+  type    = string
+  default = "l7-xlb-url-map"
+}
+
+variable "google_compute_managed_ssl_certificate_webapp_ssl_cert" {
+  type    = string
+  default = "webapp-ssl-cert"
+}
+
+variable "google_compute_target_https_proxy_https_proxy_name" {
+  type    = string
+  default = "l7-xlb-target-http-proxy"
+}
+
+variable "mailgun_api_key" {
+  type = string
+  # No default value provided to ensure that sensitive data is not exposed
+}

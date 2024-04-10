@@ -12,6 +12,13 @@ provider "google" {
   region  = var.geographical_region
   zone    = var.availability_zone
 }
+
+# Create a Key Ring
+resource "google_kms_key_ring" "key_ring" {
+  name     = var.google_kms_key_ring_name
+  location = var.region
+}
+
 resource "google_compute_network" "vpc_network" {
   count                           = length(var.vpcs)
   name                            = var.vpcs[count.index].vpc
@@ -128,6 +135,20 @@ resource "google_compute_firewall" "allow_application" {
 
 # }
 
+resource "google_kms_crypto_key" "vm_crypto_key" {
+  name            = var.google_kms_crypto_key_name
+  key_ring        = google_kms_key_ring.key_ring.id
+  rotation_period = var.google_kms_crypto_key_rotation_period # 30 days
+}
+
+resource "google_kms_crypto_key_iam_binding" "vm_crypto_key" {
+  provider      = google-beta
+  crypto_key_id = google_kms_crypto_key.vm_crypto_key.id
+  role          = var.google_kms_crypto_key_iam_binding_role
+
+  members = ["serviceAccount:service-279360147711@compute-system.iam.gserviceaccount.com"]
+}
+
 # Regional Compute Instance Template
 resource "google_compute_region_instance_template" "webapp_template" {
   name_prefix  = var.google_compute_region_instance_template_name_prefix
@@ -141,6 +162,10 @@ resource "google_compute_region_instance_template" "webapp_template" {
     boot         = var.google_compute_region_instance_template_boot
     disk_size_gb = var.vm_disk_size_gb
     disk_type    = var.vm_disk_type
+
+    disk_encryption_key {
+      kms_key_self_link = google_kms_crypto_key.vm_crypto_key.id
+    }
   }
 
   can_ip_forward = var.google_compute_region_instance_template_can_ip_forward
@@ -187,6 +212,28 @@ resource "google_service_networking_connection" "private_services_connection" {
   network                 = google_compute_network.vpc_network[0].self_link
   service                 = var.service_name
   reserved_peering_ranges = [google_compute_global_address.private_ip_allocation.name]
+}
+
+resource "google_kms_crypto_key" "cloudsql_crypto_key" {
+  name            = "cloudsql-crypto-key"
+  key_ring        = google_kms_key_ring.key_ring.id
+  rotation_period = "2592000s" # 30 days
+}
+
+resource "google_project_service_identity" "gcp_sa_cloud_sql" {
+  provider = google-beta
+  project  = var.project_identifier
+  service  = var.google_kms_crypto_key_gcp_sa_cloud_sql_service
+}
+
+resource "google_kms_crypto_key_iam_binding" "crypto_key" {
+  provider      = google-beta
+  crypto_key_id = google_kms_crypto_key.cloudsql_crypto_key.id
+  role          = var.google_kms_crypto_key_iam_binding_crypto_key_role
+
+  members = [
+    "serviceAccount:${google_project_service_identity.gcp_sa_cloud_sql.email}",
+  ]
 }
 
 resource "google_sql_database_instance" "instance" {
@@ -311,16 +358,16 @@ resource "google_project_iam_binding" "function_service_account_roles" {
 }
 
 
-resource "google_storage_bucket" "function_code_bucket" {
-  name     = var.google_storage_bucket_name
-  location = var.region
-}
+# resource "google_storage_bucket" "function_code_bucket" {
+#   name     = var.google_storage_bucket_name
+#   location = var.region
+# }
 
-resource "google_storage_bucket_object" "function_code_objects" {
-  name   = var.google_storage_bucket_object_name
-  bucket = google_storage_bucket.function_code_bucket.name
-  source = var.google_storage_bucket_object_source
-}
+# resource "google_storage_bucket_object" "function_code_objects" {
+#   name   = var.google_storage_bucket_object_name
+#   bucket = google_storage_bucket.function_code_bucket.name
+#   source = var.google_storage_bucket_object_source
+# }
 
 resource "google_cloudfunctions2_function" "email_verification_function" {
 
@@ -372,6 +419,7 @@ resource "google_cloudfunctions2_function" "email_verification_function" {
       DB_POOL_MIN         = var.db_pool_min,
       DB_POOL_ACQUIRE     = var.db_pool_acquire,
       DB_POOL_IDLE        = var.db_pool_idle
+      MAILGUN_API_KEY     = var.mailgun_api_key
     }
 
     ingress_settings               = var.google_cloudfunctions2_function_service_config_ingress_settings
@@ -423,6 +471,40 @@ resource "google_compute_http_health_check" "http_health_check" {
   unhealthy_threshold = 2
   port                = var.google_compute_http_health_port
   request_path        = var.google_compute_http_health_request_path
+}
+
+# Create a CMEK for Cloud Storage Buckets
+resource "google_kms_crypto_key" "storage_crypto_key" {
+  name            = var.google_kms_crypto_key_storage_crypto_key_name
+  key_ring        = google_kms_key_ring.key_ring.id
+  rotation_period = var.google_kms_crypto_key_storage_crypto_key_rotation_period # 30 days
+}
+
+data "google_storage_project_service_account" "gcs_account" {
+}
+
+resource "google_kms_crypto_key_iam_binding" "binding" {
+  crypto_key_id = google_kms_crypto_key.storage_crypto_key.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  members = [
+    "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
+  ]
+}
+
+resource "google_storage_bucket" "function_code_bucket" {
+  name     = var.google_storage_bucket_name
+  location = var.region
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.storage_crypto_key.id
+  }
+
+  depends_on = [google_kms_crypto_key_iam_binding.binding]
+}
+
+resource "google_storage_bucket_object" "function_code_objects" {
+  name   = var.google_storage_bucket_object_name
+  bucket = google_storage_bucket.function_code_bucket.name
+  source = var.google_storage_bucket_object_source
 }
 
 resource "google_compute_region_autoscaler" "webapp_autoscaler" {
@@ -488,7 +570,7 @@ resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
 }
 
 resource "google_compute_target_https_proxy" "https_proxy" {
-  name             = "l7-xlb-target-http-proxy"
+  name             = var.google_compute_target_https_proxy_https_proxy_name
   provider         = google
   url_map          = google_compute_url_map.default.id
   ssl_certificates = [google_compute_managed_ssl_certificate.webapp_ssl_cert.name]
@@ -499,13 +581,13 @@ resource "google_compute_target_https_proxy" "https_proxy" {
 
 # url map
 resource "google_compute_url_map" "default" {
-  name            = "l7-xlb-url-map"
+  name            = var.google_compute_url_map_default_name
   provider        = google
   default_service = google_compute_backend_service.webapp_backend.id
 }
 
 resource "google_compute_managed_ssl_certificate" "webapp_ssl_cert" {
-  name = "webapp-ssl-cert"
+  name = var.google_compute_managed_ssl_certificate_webapp_ssl_cert
 
   managed {
     domains = [var.dns_record_name]
@@ -537,7 +619,7 @@ resource "google_compute_backend_service" "webapp_backend" {
 
 # Firewall Rule
 resource "google_compute_firewall" "allow_lb" {
-  name    = "allow-lb-firewall"
+  name    = var.google_compute_firewall_name
   network = google_compute_network.vpc_network[0].name
 
   allow {
@@ -550,7 +632,7 @@ resource "google_compute_firewall" "allow_lb" {
 }
 
 resource "google_compute_firewall" "default" {
-  name          = "l7-xlb-fw-allow-hc"
+  name          = var.google_compute_firewall_default
   provider      = google
   direction     = "INGRESS"
   network       = google_compute_network.vpc_network[0].name
